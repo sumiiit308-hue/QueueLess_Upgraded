@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QueueLess | Admin</title><link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+:root{--purple:#624096;--ink:#30243f;--muted:#81778d;--line:#eee8f5}
+body{background:#f7f5fb;color:var(--ink)}.admin-wrap{max-width:1320px;margin:0 auto;padding:28px 4% 55px}
+.admin-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:30px}
+.admin-head h1{font-size:clamp(25px,4vw,36px);margin-top:18px;color:#35234f}.admin-head p{color:var(--muted);margin-top:6px}
+.admin-actions{display:flex;gap:10px;align-items:center}.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer}.btn-primary{background:var(--purple);color:white}.btn-light{background:white;color:var(--purple);border:1px solid #ded5e9}.btn-danger{background:#fff0f0;color:#a12f3b}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:24px 0}.stat{background:white;border:1px solid var(--line);border-radius:15px;padding:18px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:29px;margin-top:8px;color:#402c5d}
+.queue-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.queue-card{background:white;border:1px solid var(--line);border-radius:17px;padding:20px;min-width:0}.queue-title{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.queue-title h2{font-size:19px;color:#402c5d}.queue-title p{color:var(--muted);font-size:13px;margin-top:5px}.count{background:#f1eafa;color:#5d3b8d;border-radius:30px;padding:6px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.call-form{margin:8px 0}.counter-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.counter-controls .btn{width:100%;font-size:12px}.token-table{width:100%;border-collapse:collapse;font-size:13px}.token-table th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:10px 7px;border-bottom:1px solid var(--line)}.token-table td{padding:12px 7px;border-bottom:1px solid #f3eff7;vertical-align:middle}.token-id{font-weight:800;color:#624096}.status{display:inline-block;border-radius:20px;padding:5px 8px;font-size:11px;font-weight:700}.status.waiting{background:#fff5d9;color:#886400}.status.serving{background:#e6f6eb;color:#18743b}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}.row-actions form{display:inline}.empty{color:var(--muted);padding:20px 0}.flash{padding:12px 15px;border-radius:10px;background:#f1eafa;color:#4f2e78;margin-bottom:16px}.flash.error{background:#fff0f0;color:#a12f3b}
+.footer-note{color:var(--muted);font-size:12px;margin-top:22px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(3,1fr)}.queue-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.counter-controls{grid-template-columns:1fr}.admin-wrap{padding:20px 14px}.admin-head{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:repeat(2,1fr)}.queue-card{padding:14px;overflow-x:auto}.token-table{min-width:530px}}
+</style></head><body>
+<main class="admin-wrap">
+<header class="admin-head">
+<div><div class="brand dark-brand"><span class="brand-icon">Q</span><span>QueueLess <small style="font-size:12px;color:#887b99">ADMIN</small></span></div>
+<h1>Queue control centre</h1><p>Manage today's queues, call students and monitor service performance.</p></div>
+<div class="admin-actions"><a class="btn btn-light" href="{{ url_for('admin_analytics') }}">Analytics</a><a class="btn btn-light" href="{{ url_for('admin_settings') }}">Manage campus</a><a class="btn btn-light" href="{{ url_for('dashboard') if session.get('user_id') else url_for('home') }}">Student portal</a>
+<form method="POST" action="{{ url_for('admin_logout') }}"><button class="btn btn-light">Log out</button></form></div>
+</header>
+{% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+<section class="stats" id="stats">
+<div class="stat"><small>Waiting now</small><strong id="waitingStat">{{ stats.waiting }}</strong></div>
+<div class="stat"><small>Currently serving</small><strong id="servingStat">{{ stats.serving }}</strong></div>
+<div class="stat"><small>Completed today</small><strong id="completedStat">{{ stats.completed }}</strong></div>
+<div class="stat"><small>Cancelled today</small><strong id="cancelledStat">{{ stats.cancelled }}</strong></div>
+<div class="stat"><small>Registered students</small><strong>{{ stats.students }}</strong></div>
+</section>
+<section class="queue-grid" id="queueGrid">
+{% for q in queues %}
+<article class="queue-card" data-office="{{ q.office.name }}">
+<div class="queue-title"><div><h2>{{ q.office.icon }} {{ q.office.name }}</h2><p>{{ q.office.description }}</p></div><span class="count">{{ q.waiting }} waiting</span></div>
+<div class="counter-controls">{% for counter in q.office.counters %}<form class="call-form" method="POST" action="{{ url_for('admin_call_next') }}"><input type="hidden" name="office" value="{{ q.office.name }}"><input type="hidden" name="counter_id" value="{{ counter.id }}"><button class="btn btn-primary" type="submit">{{ counter.name }} · Call next / finish current →</button></form>{% endfor %}</div>
+{% if q.tokens %}
+<table class="token-table"><thead><tr><th>Token</th><th>Student</th><th>Service / Counter</th><th>Status</th><th>Action</th></tr></thead><tbody>
+{% for t in q.tokens %}
+<tr><td class="token-id">{{ q.office.name[:2]|upper }}-{{ "%03d"|format(t.token_number) }}</td><td>{{ t.full_name }}<br><small>{{ t.student_id }}</small></td><td>{{ t.service }}<br><small>{{ t.counter_name or "Unassigned" }}</small></td><td><span class="status {{ t.status }}">{{ t.status|title }}</span></td><td><div class="row-actions">
+{% if t.status == 'serving' %}<form method="POST" action="{{ url_for('admin_complete',token_id=t.id) }}"><button class="btn btn-light" type="submit">Complete</button></form>{% endif %}
+<form method="POST" action="{{ url_for('admin_cancel',token_id=t.id) }}" onsubmit="return confirm('Cancel this token?')"><button class="btn btn-danger" type="submit">Cancel</button></form>
+</div></td></tr>
+{% endfor %}</tbody></table>
+{% else %}<p class="empty">No active tokens in this department.</p>{% endif %}
+</article>
+{% endfor %}
+</section>
+<p class="footer-note">Live refresh every 5 seconds. Service-time averages are based on completed tokens from the last 90 days; the initial baseline is 4 minutes.</p>
+</main>
+<script>
+async function refreshAdmin(){
+ try{
+  const r=await fetch("{{ url_for('admin_queues_api') }}",{cache:"no-store"});if(!r.ok)return;
+  const d=await r.json();
+  for(const k of ["waiting","serving","completed","cancelled"]){const el=document.getElementById(k+"Stat");if(el)el.textContent=d.stats[k];}
+  // Refresh the page only when the queue changes, so forms and current actions stay in sync.
+  const signature=d.queues.map(q=>q.office.name+":"+q.tokens.map(t=>t.id+"-"+t.status).join(",")).join("|");
+  if(window._queueSignature===undefined)window._queueSignature=signature;
+  else if(window._queueSignature!==signature){window._queueSignature=signature;window.location.reload();}
+ }catch(e){}
+}
+setInterval(refreshAdmin,5000);
+</script></body></html>

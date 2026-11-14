@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueueLess | Sign in</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<main class="page-container">
+  <section class="welcome-panel">
+    <div class="brand"><span class="brand-icon">Q</span><span>QueueLess</span></div>
+    <div class="welcome-content">
+      <span class="tagline">LESS WAITING, MORE DOING.</span>
+      <h1>Your time<br>matters.</h1>
+      <p>Know your queue position, check estimated waiting time and get ready when your turn approaches.</p>
+      <ul class="feature-list">
+        <li>✓ Get a virtual queue token</li>
+        <li>✓ Track your queue position</li>
+        <li>✓ See estimated waiting time</li>
+      </ul>
+    </div>
+    <p class="panel-footer">Smart queue management for university services.</p>
+  </section>
+
+  <section class="form-panel">
+    <div class="mobile-brand"><span class="brand-icon">Q</span> QueueLess</div>
+    <div class="form-wrapper">
+      <div class="form-heading">
+        <h2 id="formTitle">Welcome back!</h2>
+        <p id="formSubtitle">Sign in to continue to your account.</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="message {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form id="loginForm" action="{{ url_for('login') }}" method="POST">
+        <div class="input-group">
+          <label for="loginEmail">Email address</label>
+          <input type="email" id="loginEmail" name="email" placeholder="Enter your email" autocomplete="email" required>
+        </div>
+        <div class="input-group">
+          <label for="loginPassword">Password</label>
+          <div class="password-box">
+            <input type="password" id="loginPassword" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="toggle-password" data-target="loginPassword">Show</button>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Sign In <span>→</span></button>
+        <p class="switch-text">Don't have an account? <button type="button" id="showRegister">Create account</button></p>
+      </form>
+
+      <form id="registerForm" class="hidden" action="{{ url_for('register') }}" method="POST">
+        <div class="input-group">
+          <label for="fullName">Full name</label>
+          <input type="text" id="fullName" name="full_name" placeholder="Enter your full name" autocomplete="name" required>
+        </div>
+        <div class="input-group">
+          <label for="registerEmail">Email address</label>
+          <input type="email" id="registerEmail" name="email" placeholder="Enter your email" autocomplete="email" required>
+        </div>
+        <div class="input-group">
+          <label for="studentId">Student ID</label>
+          <input type="text" id="studentId" name="student_id" placeholder="Enter your student ID" required>
+        </div>
+        <div class="input-group">
+          <label for="registerPassword">Create password</label>
+          <div class="password-box">
+            <input type="password" id="registerPassword" name="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" required>
+            <button type="button" class="toggle-password" data-target="registerPassword">Show</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="confirmPassword">Confirm password</label>
+          <div class="password-box">
+            <input type="password" id="confirmPassword" name="confirm_password" placeholder="Enter password again" autocomplete="new-password" required>
+            <button type="button" class="toggle-password" data-target="confirmPassword">Show</button>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Create Account <span>→</span></button>
+        <p class="switch-text">Already have an account? <button type="button" id="showLogin">Sign in</button></p>
+      </form>
+      <p class="security-note">🔒 Passwords are hashed before storage.</p>
+    </div>
+    <p class="copyright"><a href="{{ url_for('admin_login') }}" style="color:#68449e;text-decoration:none;font-weight:bold;">Admin portal</a> · © 2026 QueueLess</p>
+  </section>
+</main>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
